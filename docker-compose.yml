@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: pdv_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/pdv_test
+    depends_on:
+      - db
+    networks:
+      - pdv_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pdv_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - pdv_network
+
+  db:
+    image: postgres:15
+    container_name: pdv_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=pdv_test
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pdv_network
+
+networks:
+  pdv_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
