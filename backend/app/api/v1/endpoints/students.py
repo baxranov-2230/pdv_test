@@ -149,7 +149,9 @@ async def verify_student(
     is_match = FaceService.verify_face(student.face_encoding, check_encoding)
 
     if not is_match:
-        raise HTTPException(status_code=401, detail="Face verification failed")
+        raise HTTPException(
+            status_code=401, detail="Bu siz emassiz. Tizim sizni tanimadi."
+        )
 
     # 4. Generate Token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -197,6 +199,8 @@ async def verify_student_match(
     is_match = FaceService.verify_face(current_student.face_encoding, check_encoding)
 
     if not is_match:
-        raise HTTPException(status_code=401, detail="Face verification failed")
+        raise HTTPException(
+            status_code=401, detail="Bu siz emassiz. Tizim sizni tanimadi."
+        )
 
     return {"success": True, "message": "Face verified successfully"}

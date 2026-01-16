@@ -26,7 +26,10 @@ class Question(Base):
     id = Column(Integer, primary_key=True, index=True)
     test_id = Column(Integer, ForeignKey("tests.id"))
     text = Column(String)
-    options = Column(JSON)  # List of strings or objects
+    image = Column(String, nullable=True)  # Path to image e.g. /static/filename.jpg
+    options = Column(
+        JSON
+    )  # List of strings or objects. Now supports objects like {text: "...", image: "..."}
     correct_option = Column(Integer)  # Index of the correct option
 
     test = relationship("Test", back_populates="questions")

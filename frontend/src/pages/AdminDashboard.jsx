@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import StudentManager from '../components/StudentManager';
-import TestManager from '../components/TestManager';
+import TestList from '../components/TestList';
+import TestForm from '../components/TestForm';
 import ResultsViewer from '../components/ResultsViewer';
 import TeacherManager from '../components/TeacherManager';
 import SubjectManager from '../components/SubjectManager';
@@ -147,7 +148,9 @@ export default function AdminDashboard() {
                     <Route path="teachers" element={<TeacherManager />} />
                     <Route path="students" element={<StudentManager />} />
                     <Route path="subjects" element={<SubjectManager />} />
-                    <Route path="tests" element={<TestManager />} />
+                    <Route path="tests" element={<TestList />} />
+                    <Route path="tests/create" element={<TestForm />} />
+                    <Route path="tests/edit/:id" element={<TestForm />} />
                     <Route path="results" element={<ResultsViewer />} />
                     <Route path="*" element={
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 10, opacity: 0.5 }}>

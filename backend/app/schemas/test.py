@@ -1,13 +1,16 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
 from pydantic import BaseModel, Field
 from app.schemas.subject import Subject as SubjectSchema  # Import
 
 
 class QuestionBase(BaseModel):
     text: str
-    options: List[str] = Field(
-        ..., min_items=2, description="List of options, minimum 2"
+    image: Optional[str] = None  # Add image path
+    options: List[Union[str, Dict[str, Optional[str]]]] = Field(
+        ...,
+        min_items=2,
+        description="List of options, minimum 2. Can be strings or objects {text: ..., image: ...}",
     )
     correct_option: int = Field(..., ge=0, description="Index of the correct option")
 
@@ -27,7 +30,7 @@ class Question(QuestionBase):
 class TestBase(BaseModel):
     title: str
     description: Optional[str] = None
-    subject_id: Optional[int] = None  # Add subject_id
+    subject_id: Optional[int] = None
 
 
 class TestCreate(TestBase):
@@ -41,7 +44,7 @@ class TestUpdate(TestBase):
 class Test(TestBase):
     id: int
     questions: List[Question] = []
-    subject: Optional[SubjectSchema] = None  # Add subject response
+    subject: Optional[SubjectSchema] = None
 
     class Config:
         from_attributes = True

@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="Student Test Platform", version="1.0.0")
 
@@ -11,6 +13,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount uploads directory to serve static files
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 from app.core.database import engine, Base
 from app.models import *  # Import models to ensure they are registered with Base
@@ -24,10 +33,11 @@ async def startup():
 
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-from app.api.v1.endpoints import students, tests
+from app.api.v1.endpoints import students, tests, upload
 
 app.include_router(students.router, prefix="/api/v1/students", tags=["students"])
 app.include_router(tests.router, prefix="/api/v1/tests", tags=["tests"])
+app.include_router(upload.router, prefix="/api/v1/upload", tags=["upload"])
 
 from app.api.v1.endpoints import teachers, subjects
 
