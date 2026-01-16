@@ -34,6 +34,10 @@ class TestCreate(TestBase):
     questions: List[QuestionCreate]
 
 
+class TestUpdate(TestBase):
+    questions: List[QuestionCreate]
+
+
 class Test(TestBase):
     id: int
     questions: List[Question] = []

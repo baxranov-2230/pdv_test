@@ -66,12 +66,107 @@ async def create_test(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/{test_id}", response_model=test_schema.Test)
+async def update_test(
+    test_id: int,
+    test_in: test_schema.TestUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        result = await db.execute(select(Test).where(Test.id == test_id))
+        test = result.scalars().first()
+        if not test:
+            raise HTTPException(status_code=404, detail="Test not found")
+
+        # Update fields
+        test.title = test_in.title
+        test.description = test_in.description
+        test.subject_id = test_in.subject_id
+
+        # Replace questions - delete existing and add new
+        # Note: This changes question IDs. For a simple app this is acceptable.
+        # Ideally, we would diff and update.
+
+        # Delete existing questions
+        q_result = await db.execute(select(Question).where(Question.test_id == test_id))
+        existing_questions = q_result.scalars().all()
+        for q in existing_questions:
+            await db.delete(q)
+
+        await db.flush()
+
+        # Add new questions
+        for q in test_in.questions:
+            if q.correct_option >= len(q.options):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Correct option index {q.correct_option} is out of bounds for question '{q.text}'",
+                )
+
+            question = Question(
+                test_id=test.id,
+                text=q.text,
+                options=q.options,
+                correct_option=q.correct_option,
+            )
+            db.add(question)
+
+        await db.commit()
+        await db.refresh(test)
+
+        # Eager load questions for response
+        result = await db.execute(
+            select(Test)
+            .options(selectinload(Test.questions), selectinload(Test.subject))
+            .where(Test.id == test.id)
+        )
+        test_loaded = result.scalars().first()
+        return test_loaded
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        import logging
+
+        logging.error(f"Error updating test: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{test_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_test(
+    test_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        result = await db.execute(select(Test).where(Test.id == test_id))
+        test = result.scalars().first()
+        if not test:
+            raise HTTPException(status_code=404, detail="Test not found")
+
+        # Questions and Results should cascade delete if configured in DB,
+        # but let's be explicit if needed or rely on cascade.
+        # Assuming cascade is not guaranteed, let's try to delete.
+        # Actually in SQLAlchemy asyncio, we delete the object.
+        await db.delete(test)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        import logging
+
+        logging.error(f"Error deleting test: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/", response_model=List[test_schema.Test])
 async def read_tests(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Test).options(selectinload(Test.questions), selectinload(Test.subject))
+        select(Test)
+        .options(selectinload(Test.questions), selectinload(Test.subject))
+        .order_by(Test.id.desc())
     )
     tests = result.scalars().all()
     return tests
