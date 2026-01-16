@@ -39,7 +39,7 @@ export default function StudentManager() {
     const fetchStudents = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:8000/api/v1/students/');
+            const res = await axios.get('/rest/api/v1/students/');
             setStudents(res.data);
         } catch (err) {
             toast.error('Failed to fetch students');
@@ -67,7 +67,7 @@ export default function StudentManager() {
         formData.append('file', photo);
 
         try {
-            await axios.post('http://localhost:8000/api/v1/students/', formData);
+            await axios.post('/rest/api/v1/students/', formData);
             toast.success('Student registered successfully!');
             handleCloseDialog();
             fetchStudents();

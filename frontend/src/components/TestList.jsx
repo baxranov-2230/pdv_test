@@ -44,7 +44,7 @@ export default function TestList() {
     const fetchTests = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:8000/api/v1/tests/');
+            const res = await axios.get('/rest/api/v1/tests/');
             setTests(res.data);
         } catch (err) {
             console.error(err);
@@ -65,7 +65,7 @@ export default function TestList() {
 
     const confirmDelete = async () => {
         try {
-            await axios.delete(`http://localhost:8000/api/v1/tests/${deleteId}`);
+            await axios.delete(`/rest/api/v1/tests/${deleteId}`);
             toast.success("Test deleted successfully");
             fetchTests();
         } catch (err) {
@@ -184,7 +184,7 @@ export default function TestList() {
                                 {q.image && (
                                     <Box sx={{ mb: 2 }}>
                                         <img
-                                            src={`http://localhost:8000${q.image}`}
+                                            src={`/rest${q.image}`}
                                             alt="Question"
                                             style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '4px' }}
                                         />
@@ -218,7 +218,7 @@ export default function TestList() {
                                                     </Typography>
                                                     {image && (
                                                         <img
-                                                            src={`http://localhost:8000${image}`}
+                                                            src={`/rest${image}`}
                                                             alt="Option"
                                                             style={{ maxWidth: '150px', maxHeight: '100px', marginTop: '5px', borderRadius: '4px' }}
                                                         />

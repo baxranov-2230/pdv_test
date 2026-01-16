@@ -32,7 +32,7 @@ export default function SubjectManager() {
 
     const fetchSubjects = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/v1/subjects/');
+            const res = await axios.get('/rest/api/v1/subjects/');
             setSubjects(res.data);
         } catch (err) {
             console.error(err);
@@ -50,7 +50,7 @@ export default function SubjectManager() {
             return;
         }
         try {
-            await axios.post('http://localhost:8000/api/v1/subjects/', { name: newSubjectName });
+            await axios.post('/rest/api/v1/subjects/', { name: newSubjectName });
             toast.success("Subject created");
             setNewSubjectName('');
             setOpenDialog(false);
@@ -63,7 +63,7 @@ export default function SubjectManager() {
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure? This might affect tests linked to this subject.")) {
             try {
-                await axios.delete(`http://localhost:8000/api/v1/subjects/${id}`);
+                await axios.delete(`/rest/api/v1/subjects/${id}`);
                 toast.success("Subject deleted");
                 fetchSubjects();
             } catch (err) {

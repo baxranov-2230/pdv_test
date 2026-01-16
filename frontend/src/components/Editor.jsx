@@ -24,11 +24,11 @@ const Editor = ({ value, onChange, placeholder }) => {
                 formData.append('file', file);
 
                 try {
-                    const res = await axios.post('http://localhost:8000/api/v1/upload/', formData, {
+                    const res = await axios.post('/rest/api/v1/upload/', formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
 
-                    const url = `http://localhost:8000${res.data.url}`;
+                    const url = `/rest${res.data.url}`;
                     const quill = quillRef.current.getEditor();
                     const range = quill.getSelection();
                     quill.insertEmbed(range.index, 'image', url);

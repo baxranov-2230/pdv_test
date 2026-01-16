@@ -42,7 +42,7 @@ export default function TeacherManager() {
 
     const fetchTeachers = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/v1/teachers/');
+            const res = await axios.get('/rest/api/v1/teachers/');
             setTeachers(res.data);
         } catch (err) {
             console.error(err);
@@ -94,7 +94,7 @@ export default function TeacherManager() {
                     delete payload.password;
                 }
 
-                await axios.put(`http://localhost:8000/api/v1/teachers/${editingTeacher.id}`, payload);
+                await axios.put(`/rest/api/v1/teachers/${editingTeacher.id}`, payload);
                 toast.success("Teacher updated successfully");
             } else {
                 // Create
@@ -108,7 +108,7 @@ export default function TeacherManager() {
                     password: formData.jshshir // Set password to JSHSHIR
                 };
 
-                await axios.post('http://localhost:8000/api/v1/teachers/', payload);
+                await axios.post('/rest/api/v1/teachers/', payload);
                 toast.success("Teacher created successfully");
             }
             fetchTeachers();
@@ -121,7 +121,7 @@ export default function TeacherManager() {
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this teacher?")) {
             try {
-                await axios.delete(`http://localhost:8000/api/v1/teachers/${id}`);
+                await axios.delete(`/rest/api/v1/teachers/${id}`);
                 toast.success("Teacher deleted");
                 fetchTeachers();
             } catch (err) {

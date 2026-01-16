@@ -39,7 +39,7 @@ export default function StudentDashboard() {
         const fetchTests = async () => {
             try {
                 // In future: endpoint to get "assigned" tests or just all open tests
-                const res = await axios.get('http://localhost:8000/api/v1/tests/');
+                const res = await axios.get('/rest/api/v1/tests/');
                 setTests(res.data);
             } catch (err) {
                 console.error(err);
@@ -77,7 +77,7 @@ export default function StudentDashboard() {
             const formData = new FormData();
             formData.append('file', file);
 
-            await axios.post('http://localhost:8000/api/v1/students/verify-match', formData, {
+            await axios.post('/rest/api/v1/students/verify-match', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 

@@ -22,7 +22,7 @@ export default function StudentResults() {
     useEffect(() => {
         const fetchResults = async () => {
             try {
-                const res = await axios.get('http://localhost:8000/api/v1/tests/results/my');
+                const res = await axios.get('/rest/api/v1/tests/results/my');
                 setResults(res.data);
             } catch (err) {
                 console.error(err);

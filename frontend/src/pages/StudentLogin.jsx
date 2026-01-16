@@ -57,7 +57,7 @@ export default function StudentLogin() {
             formData.append('student_id', studentId);
             formData.append('file', file);
 
-            const res = await axios.post('http://localhost:8000/api/v1/students/verify', formData, {
+            const res = await axios.post('/rest/api/v1/students/verify', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
