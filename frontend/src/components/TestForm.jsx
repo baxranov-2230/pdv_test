@@ -54,7 +54,7 @@ export default function TestForm() {
 
     const fetchSubjects = async () => {
         try {
-            const res = await axios.get('/rest/api/v1/subjects/');
+            const res = await axios.get('/api/v1/subjects/');
             setSubjects(res.data);
         } catch (err) {
             console.error(err);
@@ -65,7 +65,7 @@ export default function TestForm() {
     const fetchTest = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`/rest/api/v1/tests/${id}`);
+            const res = await axios.get(`/api/v1/tests/${id}`);
             const test = res.data;
             setTitle(test.title);
             setDescription(test.description || '');
@@ -95,7 +95,7 @@ export default function TestForm() {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const res = await axios.post('/rest/api/v1/upload/', formData, {
+            const res = await axios.post('/api/v1/upload/', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             return res.data.url;
@@ -177,10 +177,10 @@ export default function TestForm() {
             };
 
             if (isEditing) {
-                await axios.put(`/rest/api/v1/tests/${id}`, payload);
+                await axios.put(`/api/v1/tests/${id}`, payload);
                 toast.success('Test updated successfully!');
             } else {
-                await axios.post('/rest/api/v1/tests/', payload);
+                await axios.post('/api/v1/tests/', payload);
                 toast.success('Test created successfully!');
             }
             navigate('/admin/tests');

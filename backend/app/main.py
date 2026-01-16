@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-app = FastAPI(title="Student Test Platform", version="1.0.0", root_path="/rest")
+app = FastAPI(title="Student Test Platform", version="1.0.0")
 
 # CORS Middleware
 app.add_middleware(

@@ -30,7 +30,7 @@ export default function TestTaking() {
     useEffect(() => {
         const fetchTest = async () => {
             try {
-                const res = await axios.get(`/rest/api/v1/tests/${testId}`);
+                const res = await axios.get(`/api/v1/tests/${testId}`);
                 if (res.data.questions) {
                     res.data.questions.sort((a, b) => a.id - b.id);
                 }
@@ -93,7 +93,7 @@ export default function TestTaking() {
                 answers: answersArray
             };
 
-            const res = await axios.post('/rest/api/v1/tests/submit', payload);
+            const res = await axios.post('/api/v1/tests/submit', payload);
 
             toast.success(`Test Submitted! Score: ${res.data.score}%`);
             navigate('/student/dashboard'); // Or show result page

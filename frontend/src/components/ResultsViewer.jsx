@@ -22,7 +22,7 @@ export default function ResultsViewer() {
     useEffect(() => {
         const fetchResults = async () => {
             try {
-                const res = await axios.get('/rest/api/v1/tests/results/all');
+                const res = await axios.get('/api/v1/tests/results/all');
                 setResults(res.data);
             } catch (err) {
                 console.error(err);

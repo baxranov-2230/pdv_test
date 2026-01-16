@@ -7,10 +7,9 @@ export default defineConfig({
   server: {
     host: true,
     proxy: {
-      '/rest': {
+      '/api': {
         target: 'http://pdv_backend:8000', // Docker service name
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/rest/, ''),
         secure: false,
       }
     }

@@ -44,7 +44,7 @@ export default function TestList() {
     const fetchTests = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('/rest/api/v1/tests/');
+            const res = await axios.get('/api/v1/tests/');
             setTests(res.data);
         } catch (err) {
             console.error(err);
@@ -65,7 +65,7 @@ export default function TestList() {
 
     const confirmDelete = async () => {
         try {
-            await axios.delete(`/rest/api/v1/tests/${deleteId}`);
+            await axios.delete(`/api/v1/tests/${deleteId}`);
             toast.success("Test deleted successfully");
             fetchTests();
         } catch (err) {

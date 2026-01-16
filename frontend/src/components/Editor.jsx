@@ -24,7 +24,7 @@ const Editor = ({ value, onChange, placeholder }) => {
                 formData.append('file', file);
 
                 try {
-                    const res = await axios.post('/rest/api/v1/upload/', formData, {
+                    const res = await axios.post('/api/v1/upload/', formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
 

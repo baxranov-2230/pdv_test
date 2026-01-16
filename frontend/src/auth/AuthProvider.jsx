@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
             formData.append('username', username);
             formData.append('password', password);
 
-            const response = await axios.post('/rest/api/v1/auth/login', formData);
+            const response = await axios.post('/api/v1/auth/login', formData);
             const newToken = response.data.access_token;
 
             // Set state immediately to avoid race condition with ProtectedRoute
@@ -62,13 +62,13 @@ export const AuthProvider = ({ children }) => {
             const formData = new FormData();
             formData.append('file', imageFile);
 
-            const response = await axios.post('/rest/api/v1/auth/student/identify', formData);
+            const response = await axios.post('/api/v1/auth/student/identify', formData);
             // This endpoint (student/identify) isn't used in my recent StudentLogin.jsx...
             // StudentLogin.jsx calls /api/v1/students/verify manually!
             // I should verify if StudentLogin uses this provider function or not.
             // Looking at StudentLogin.jsx: 
             // const { login } = useAuth(); 
-            // ...calls axios.post('/rest/api/v1/students/verify', ...)
+            // ...calls axios.post('/api/v1/students/verify', ...)
             // ...then localStorage.setItem('token', access_token);
             // ...then navigate('/student/dashboard');
 
