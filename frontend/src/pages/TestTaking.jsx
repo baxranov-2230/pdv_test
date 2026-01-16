@@ -6,6 +6,7 @@ import {
     Box,
     Paper,
     Typography,
+    Grid,
     Radio,
     RadioGroup,
     FormControlLabel,
@@ -111,75 +112,146 @@ export default function TestTaking() {
     const progress = ((currentQuestionIndex + 1) / test.questions.length) * 100;
 
     return (
-        <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-            <Paper elevation={3} sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h5">{test.title}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        Question {currentQuestionIndex + 1} of {test.questions.length}
-                    </Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={progress} sx={{ mb: 4, borderRadius: 1, height: 8 }} />
+        <Box sx={{ maxWidth: 1200, mx: 'auto', p: 2 }}>
+            <Grid container spacing={3}>
+                {/* Main Question Area */}
+                <Grid item xs={12} md={9}>
+                    <Paper elevation={3} sx={{ p: 4 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h5">{test.title}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Question {currentQuestionIndex + 1} of {test.questions.length}
+                            </Typography>
+                        </Box>
+                        <LinearProgress variant="determinate" value={progress} sx={{ mb: 4, borderRadius: 1, height: 8 }} />
 
-                <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-                    {currentQuestion.text}
-                </Typography>
+                        <Typography variant="h6" gutterBottom sx={{ mb: 3 }} component="div">
+                            <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: currentQuestion.text }} />
+                        </Typography>
 
-                <FormControl component="fieldset" sx={{ width: '100%', mb: 4 }}>
-                    <RadioGroup
-                        value={answers[currentQuestionIndex] !== undefined ? answers[currentQuestionIndex] : ''}
-                        onChange={(e) => handleOptionChange(parseInt(e.target.value))}
-                    >
-                        {currentQuestion.options.map((opt, idx) => (
-                            <FormControlLabel
-                                key={idx}
-                                value={idx}
-                                control={<Radio />}
-                                label={opt}
-                                sx={{
-                                    mb: 1,
-                                    border: '1px solid #eee',
-                                    borderRadius: 1,
-                                    p: 1,
-                                    ml: 0,
-                                    mr: 0,
-                                    '&:hover': { bgcolor: '#f9f9f9' }
-                                }}
-                            />
-                        ))}
-                    </RadioGroup>
-                </FormControl>
+                        <FormControl component="fieldset" sx={{ width: '100%', mb: 4 }}>
+                            <RadioGroup
+                                value={answers[currentQuestionIndex] !== undefined ? answers[currentQuestionIndex] : ''}
+                                onChange={(e) => handleOptionChange(parseInt(e.target.value))}
+                            >
+                                {currentQuestion.options.map((opt, idx) => (
+                                    <FormControlLabel
+                                        key={idx}
+                                        value={idx}
+                                        control={<Radio />}
+                                        label={
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                <Typography sx={{ mr: 1, fontWeight: 'bold', mt: '2px' }}>
+                                                    {String.fromCharCode(65 + idx)})
+                                                </Typography>
+                                                <div
+                                                    className="rich-text-content"
+                                                    dangerouslySetInnerHTML={{ __html: typeof opt === 'string' ? opt : opt.text }}
+                                                />
+                                            </Box>
+                                        }
+                                        sx={{
+                                            mb: 1,
+                                            border: '1px solid #eee',
+                                            borderRadius: 1,
+                                            p: 1,
+                                            ml: 0,
+                                            mr: 0,
+                                            '&:hover': { bgcolor: '#f9f9f9' },
+                                            width: '100%',
+                                            alignItems: 'flex-start',
+                                            '& .MuiFormControlLabel-label': { width: '100%', mt: 1 }
+                                        }}
+                                    />
+                                ))}
+                            </RadioGroup>
+                        </FormControl>
 
-                <Divider sx={{ mb: 3 }} />
+                        <Divider sx={{ mb: 3 }} />
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button
-                        disabled={currentQuestionIndex === 0}
-                        onClick={handlePrev}
-                    >
-                        Previous
-                    </Button>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Button
+                                disabled={currentQuestionIndex === 0}
+                                onClick={handlePrev}
+                            >
+                                Previous
+                            </Button>
 
-                    {currentQuestionIndex === test.questions.length - 1 ? (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleSubmit}
-                            disabled={submitting}
-                            endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
-                        >
-                            Submit Test
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="contained"
-                            onClick={handleNext}
-                        >
-                            Next
-                        </Button>
-                    )}
-                </Box>
-            </Paper>
+                            {currentQuestionIndex === test.questions.length - 1 ? (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleSubmit}
+                                    disabled={submitting}
+                                    endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
+                                >
+                                    Submit Test
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    onClick={handleNext}
+                                >
+                                    Next
+                                </Button>
+                            )}
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                {/* Sidebar Navigation */}
+                <Grid item xs={12} md={3}>
+                    <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
+                        <Typography variant="h6" gutterBottom align="center">
+                            Questions
+                        </Typography>
+                        <Divider sx={{ mb: 2 }} />
+                        <Grid container spacing={1}>
+                            {test.questions.map((_, idx) => {
+                                const isAnswered = answers[idx] !== undefined;
+                                const isCurrent = currentQuestionIndex === idx;
+
+                                return (
+                                    <Grid item xs={3} sm={2} md={4} key={idx}>
+                                        <Button
+                                            variant={isCurrent ? "outlined" : "contained"}
+                                            color={isAnswered ? "success" : "inherit"}
+                                            onClick={() => setCurrentQuestionIndex(idx)}
+                                            fullWidth
+                                            sx={{
+                                                minWidth: '36px',
+                                                bgcolor: isAnswered && !isCurrent ? 'success.main' : (!isAnswered && !isCurrent ? '#e0e0e0' : 'transparent'),
+                                                color: isAnswered && !isCurrent ? '#fff' : (!isAnswered && !isCurrent ? '#000' : 'primary.main'),
+                                                borderColor: isCurrent ? 'primary.main' : 'transparent',
+                                                borderWidth: isCurrent ? 2 : 0,
+                                                '&:hover': {
+                                                    bgcolor: isAnswered ? 'success.dark' : '#d5d5d5'
+                                                }
+                                            }}
+                                        >
+                                            {idx + 1}
+                                        </Button>
+                                    </Grid>
+                                );
+                            })}
+                        </Grid>
+                        <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ w: 16, h: 16, bgcolor: '#e0e0e0', width: 20, height: 20, borderRadius: 1 }} />
+                                <Typography variant="caption">Unanswered</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ w: 16, h: 16, bgcolor: 'success.main', width: 20, height: 20, borderRadius: 1 }} />
+                                <Typography variant="caption">Answered</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ w: 16, h: 16, border: '2px solid #1976d2', width: 24, height: 24, borderRadius: 1 }} />
+                                <Typography variant="caption">Current</Typography>
+                            </Box>
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
         </Box>
     );
 }

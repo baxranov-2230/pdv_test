@@ -27,6 +27,7 @@ import {
     Image as ImageIcon,
     Close as CloseIcon
 } from '@mui/icons-material';
+import Editor from './Editor';
 
 export default function TestForm() {
     const { id } = useParams();
@@ -260,83 +261,37 @@ export default function TestForm() {
                         <AccordionDetails sx={{ p: 3 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12}>
-                                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'start' }}>
-                                        <TextField
-                                            fullWidth
-                                            label="Question Text"
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Typography variant="subtitle2" color="text.secondary">Question Text & Image</Typography>
+                                        <Editor
                                             value={q.text}
-                                            onChange={e => updateQuestion(qIndex, 'text', e.target.value)}
+                                            onChange={(val) => updateQuestion(qIndex, 'text', val)}
+                                            placeholder="Type question here..."
                                         />
-                                        <input
-                                            type="file"
-                                            hidden
-                                            ref={el => fileInputRefs.current[`q_${qIndex}`] = el}
-                                            accept="image/*"
-                                            onChange={(e) => uploadQuestionImage(qIndex, e.target.files[0])}
-                                        />
-                                        <Button
-                                            variant="outlined"
-                                            sx={{ height: 56, minWidth: 100 }}
-                                            startIcon={<ImageIcon />}
-                                            onClick={() => triggerFileInput(`q_${qIndex}`)}
-                                        >
-                                            Image
-                                        </Button>
                                     </Box>
-                                    {q.image && (
-                                        <Box sx={{ mt: 1, position: 'relative', display: 'inline-block' }}>
-                                            <img src={`http://localhost:8000${q.image}`} alt="Question Preview" style={{ maxHeight: 150, borderRadius: 4 }} />
-                                            <IconButton
-                                                size="small"
-                                                sx={{ position: 'absolute', top: 0, right: 0, bgcolor: 'rgba(255,255,255,0.8)' }}
-                                                onClick={() => updateQuestion(qIndex, 'image', null)}
-                                            >
-                                                <CloseIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
-                                    )}
                                 </Grid>
 
                                 <Grid item xs={12}>
                                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Options:</Typography>
                                     {q.options.map((opt, oIndex) => (
-                                        <Box key={oIndex} sx={{ display: 'flex', flexDirection: 'column', mb: 2, p: 1, border: '1px dashed #eee', borderRadius: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box key={oIndex} sx={{ display: 'flex', flexDirection: 'column', mb: 2, p: 2, border: '1px dashed #eee', borderRadius: 1 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                                 <Radio
                                                     checked={q.correct_option === oIndex}
                                                     onChange={() => updateQuestion(qIndex, 'correct_option', oIndex)}
+                                                    sx={{ mt: 1 }}
                                                 />
-                                                <TextField
-                                                    fullWidth
-                                                    placeholder={`Option ${oIndex + 1}`}
-                                                    value={opt.text}
-                                                    onChange={e => updateOption(qIndex, oIndex, 'text', e.target.value)}
-                                                    size="small"
-                                                    variant="outlined"
-                                                />
-                                                <input
-                                                    type="file"
-                                                    hidden
-                                                    ref={el => fileInputRefs.current[`q_${qIndex}_o_${oIndex}`] = el}
-                                                    accept="image/*"
-                                                    onChange={(e) => uploadOptionImage(qIndex, oIndex, e.target.files[0])}
-                                                />
-                                                <IconButton color="primary" onClick={() => triggerFileInput(`q_${qIndex}_o_${oIndex}`)}>
-                                                    <ImageIcon />
-                                                </IconButton>
-                                            </Box>
-                                            {opt.image && (
-                                                <Box sx={{ ml: 6, mt: 1, position: 'relative', display: 'inline-block' }}>
-                                                    <img src={`http://localhost:8000${opt.image}`} alt="Option Preview" style={{ maxHeight: 80, borderRadius: 4 }} />
-                                                    <IconButton
-                                                        size="small"
-                                                        sx={{ position: 'absolute', top: 0, right: 0, bgcolor: 'rgba(255,255,255,0.8)' }}
-                                                        onClick={() => updateOption(qIndex, oIndex, 'image', null)}
-                                                    >
-                                                        <CloseIcon fontSize="small" />
-                                                    </IconButton>
+                                                <Box sx={{ flexGrow: 1 }}>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                                                        Option {oIndex + 1}
+                                                    </Typography>
+                                                    <Editor
+                                                        value={opt.text}
+                                                        onChange={val => updateOption(qIndex, oIndex, 'text', val)}
+                                                        placeholder={`Option ${oIndex + 1}`}
+                                                    />
                                                 </Box>
-                                            )}
+                                            </Box>
                                         </Box>
                                     ))}
                                 </Grid>

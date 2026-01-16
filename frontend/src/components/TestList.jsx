@@ -173,7 +173,14 @@ export default function TestList() {
                     <List>
                         {viewTest?.questions.map((q, idx) => (
                             <Paper key={q.id} elevation={1} sx={{ p: 2, mb: 2, bgcolor: '#f9f9f9' }}>
-                                <Typography fontWeight="bold" gutterBottom>{idx + 1}. {q.text}</Typography>
+                                <Typography fontWeight="bold" gutterBottom component="div">
+                                    <span style={{ marginRight: '8px' }}>{String.fromCharCode(65 + idx)})</span>
+                                    <div
+                                        className="rich-text-content"
+                                        style={{ display: 'inline-block', verticalAlign: 'top' }}
+                                        dangerouslySetInnerHTML={{ __html: q.text }}
+                                    />
+                                </Typography>
                                 {q.image && (
                                     <Box sx={{ mb: 2 }}>
                                         <img
@@ -202,10 +209,12 @@ export default function TestList() {
                                                         variant="body2"
                                                         sx={{
                                                             fontWeight: q.correct_option === oIdx ? 'bold' : 'normal',
-                                                            color: q.correct_option === oIdx ? 'success.main' : 'text.primary'
+                                                            color: q.correct_option === oIdx ? 'success.main' : 'text.primary',
+                                                            display: 'inline-block',
+                                                            verticalAlign: 'top'
                                                         }}
                                                     >
-                                                        {text}
+                                                        <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: text }} />
                                                     </Typography>
                                                     {image && (
                                                         <img
