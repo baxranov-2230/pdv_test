@@ -1,5 +1,6 @@
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -10,6 +11,7 @@ from app.models.student import Student
 from app.api.deps import get_current_user, get_current_student
 from app.schemas import test as test_schema
 from app.models.user import User
+from app.services.pdf_service import generate_group_results_pdf
 
 router = APIRouter()
 
@@ -237,7 +239,9 @@ async def get_all_results(
     return [
         {
             "id": r.id,
+            "student_id": r.student.id if r.student else None,
             "student_name": r.student.full_name if r.student else "Unknown",
+            "group_id": r.student.group_id if r.student else None,
             "test_title": r.test.title if r.test else "Unknown",
             "score": r.score,
             "taken_at": r.taken_at,
@@ -267,3 +271,101 @@ async def get_my_results(
         }
         for r in results
     ]
+
+
+@router.get("/results/by-group/{group_id}", response_model=List[dict])
+async def get_results_by_group(
+    group_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Guruh bo'yicha barcha test natijalarini olish (Admin uchun)
+    """
+    # Guruhga tegishli talabalarni topish
+    students_result = await db.execute(
+        select(Student).where(Student.group_id == group_id)
+    )
+    students = students_result.scalars().all()
+
+    if not students:
+        return []
+
+    student_ids = [s.id for s in students]
+
+    # Shu talabalarning barcha natijalarini olish
+    results_query = await db.execute(
+        select(Result)
+        .options(selectinload(Result.student), selectinload(Result.test))
+        .where(Result.student_id.in_(student_ids))
+        .order_by(Result.taken_at.desc())
+    )
+    results = results_query.scalars().all()
+
+    return [
+        {
+            "id": r.id,
+            "student_id": r.student.id if r.student else None,
+            "student_name": r.student.full_name if r.student else "Unknown",
+            "group_id": r.student.group_id if r.student else None,
+            "test_id": r.test.id if r.test else None,
+            "test_title": r.test.title if r.test else "Unknown",
+            "score": r.score,
+            "taken_at": r.taken_at,
+        }
+        for r in results
+    ]
+
+
+@router.get("/results/download-pdf/{group_id}")
+async def download_group_results_pdf(
+    group_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Guruh bo'yicha test natijalarini PDF formatda yuklab olish
+    """
+    # Guruhga tegishli talabalarni topish
+    students_result = await db.execute(
+        select(Student).where(Student.group_id == group_id)
+    )
+    students = students_result.scalars().all()
+
+    if not students:
+        # Bo'sh PDF qaytarish
+        results_data = []
+    else:
+        student_ids = [s.id for s in students]
+
+        # Shu talabalarning barcha natijalarini olish
+        results_query = await db.execute(
+            select(Result)
+            .options(selectinload(Result.student), selectinload(Result.test))
+            .where(Result.student_id.in_(student_ids))
+            .order_by(Result.taken_at.desc())
+        )
+        results = results_query.scalars().all()
+
+        results_data = [
+            {
+                "student_name": r.student.full_name if r.student else "Unknown",
+                "test_title": r.test.title if r.test else "Unknown",
+                "score": r.score,
+                "taken_at": r.taken_at,
+            }
+            for r in results
+        ]
+
+    # PDF yaratish
+    pdf_buffer = generate_group_results_pdf(group_id, results_data)
+
+    # Fayl nomini yaratish
+    filename = f"test_results_group_{group_id}.pdf"
+
+    # StreamingResponse orqali PDF ni qaytarish
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
