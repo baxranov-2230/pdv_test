@@ -204,3 +204,35 @@ async def verify_student_match(
         )
 
     return {"success": True, "message": "Face verified successfully"}
+
+
+@router.delete("/{id}")
+async def delete_student(
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Delete a student by ID.
+    Only admins can delete students.
+    """
+    # Check if student exists
+    result = await db.execute(select(Student).where(Student.id == id))
+    student = result.scalars().first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Delete associated results first (soft cascade)
+    from app.models.test import Result
+
+    await db.execute(select(Result).where(Result.student_id == id))
+    # SQLAlchemy requires explicit delete statement for bulk delete or iterating
+    # Simpler to just use delete statement directly
+    from sqlalchemy import delete
+
+    await db.execute(delete(Result).where(Result.student_id == id))
+
+    # Delete student
+    await db.delete(student)
+    await db.commit()
+    return {"message": "Student deleted successfully"}

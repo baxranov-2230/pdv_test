@@ -20,9 +20,10 @@ import {
     Grid,
     IconButton,
     CircularProgress,
-    Chip
+    Chip,
+    Tooltip
 } from '@mui/material';
-import { Add as AddIcon, Refresh as RefreshIcon, Person as PersonIcon, PhotoCamera as PhotoCameraIcon } from '@mui/icons-material';
+import { Add as AddIcon, Refresh as RefreshIcon, Person as PersonIcon, PhotoCamera as PhotoCameraIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 export default function StudentManager() {
     const [students, setStudents] = useState([]);
@@ -78,6 +79,19 @@ export default function StudentManager() {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this student?')) {
+            try {
+                await axios.delete(`/api/v1/students/${id}`);
+                toast.success('Student deleted successfully');
+                fetchStudents();
+            } catch (err) {
+                toast.error('Failed to delete student');
+                console.error(err);
+            }
+        }
+    };
+
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setFullName('');
@@ -110,18 +124,19 @@ export default function StudentManager() {
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student ID</TableCell>
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Group</TableCell>
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                                     <CircularProgress />
                                 </TableCell>
                             </TableRow>
                         ) : students.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                                     No students found.
                                 </TableCell>
                             </TableRow>
@@ -143,6 +158,13 @@ export default function StudentManager() {
                                     </TableCell>
                                     <TableCell>
                                         <Chip label="Active" color="success" size="small" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title="Delete Student">
+                                            <IconButton onClick={() => handleDelete(student.id)} color="error">
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
                                     </TableCell>
                                 </TableRow>
                             ))
