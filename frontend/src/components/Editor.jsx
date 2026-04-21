@@ -28,7 +28,7 @@ const Editor = ({ value, onChange, placeholder }) => {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
 
-                    const url = `/rest${res.data.url}`;
+                    const url = res.data.url;
                     const quill = quillRef.current.getEditor();
                     const range = quill.getSelection();
                     quill.insertEmbed(range.index, 'image', url);

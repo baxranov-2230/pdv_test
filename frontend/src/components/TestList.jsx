@@ -184,7 +184,7 @@ export default function TestList() {
                                 {q.image && (
                                     <Box sx={{ mb: 2 }}>
                                         <img
-                                            src={`/rest${q.image}`}
+                                            src={q.image}
                                             alt="Question"
                                             style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '4px' }}
                                         />
@@ -218,7 +218,7 @@ export default function TestList() {
                                                     </Typography>
                                                     {image && (
                                                         <img
-                                                            src={`/rest${image}`}
+                                                            src={image}
                                                             alt="Option"
                                                             style={{ maxWidth: '150px', maxHeight: '100px', marginTop: '5px', borderRadius: '4px' }}
                                                         />
