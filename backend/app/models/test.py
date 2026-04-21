@@ -15,8 +15,10 @@ class Test(Base):
     subject_id = Column(
         Integer, ForeignKey("subjects.id"), nullable=True
     )  # nullable for back-compat or logic? Start nullable.
+    teacher_id = Column(Integer, ForeignKey("teachers.id"), nullable=True)
 
     subject = relationship("app.models.subject.Subject", back_populates="tests")
+    teacher = relationship("app.models.teacher.Teacher")
     questions = relationship("Question", back_populates="test")
 
 

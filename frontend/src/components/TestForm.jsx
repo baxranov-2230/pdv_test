@@ -37,16 +37,19 @@ export default function TestForm() {
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [subjects, setSubjects] = useState([]);
+    const [teachers, setTeachers] = useState([]);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
+    const [selectedTeacher, setSelectedTeacher] = useState('');
     const [questions, setQuestions] = useState([
         { text: '', image: null, options: [{ text: '', image: null }, { text: '', image: null }, { text: '', image: null }, { text: '', image: null }], correct_option: 0 }
     ]);
 
     useEffect(() => {
         fetchSubjects();
+        fetchTeachers();
         if (isEditing) {
             fetchTest();
         }
@@ -62,6 +65,15 @@ export default function TestForm() {
         }
     };
 
+    const fetchTeachers = async () => {
+        try {
+            const res = await axios.get('/api/v1/teachers/');
+            setTeachers(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const fetchTest = async () => {
         setLoading(true);
         try {
@@ -70,6 +82,7 @@ export default function TestForm() {
             setTitle(test.title);
             setDescription(test.description || '');
             setSelectedSubject(test.subject_id || '');
+            setSelectedTeacher(test.teacher_id || '');
 
             // Normalize questions
             const normalizedQuestions = test.questions.map(q => ({
@@ -173,6 +186,7 @@ export default function TestForm() {
                 title,
                 description,
                 subject_id: selectedSubject,
+                teacher_id: selectedTeacher || null,
                 questions
             };
 
@@ -212,7 +226,7 @@ export default function TestForm() {
                 </Box>
 
                 <Grid container spacing={2} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={4}>
                         <TextField
                             select
                             fullWidth
@@ -230,7 +244,25 @@ export default function TestForm() {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={4}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Teacher"
+                            value={selectedTeacher}
+                            onChange={(e) => setSelectedTeacher(e.target.value)}
+                            SelectProps={{ native: true }}
+                            InputLabelProps={{ shrink: true }}
+                        >
+                            <option value="">-- Select Teacher --</option>
+                            {teachers.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                    {t.full_name}
+                                </option>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
                         <TextField
                             fullWidth
                             label="Test Title"

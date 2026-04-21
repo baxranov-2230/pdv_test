@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional, Union, Dict
 from pydantic import BaseModel, Field
 from app.schemas.subject import Subject as SubjectSchema  # Import
+from app.schemas.teacher import Teacher as TeacherSchema
 
 
 class QuestionBase(BaseModel):
@@ -31,6 +32,7 @@ class TestBase(BaseModel):
     title: str
     description: Optional[str] = None
     subject_id: Optional[int] = None
+    teacher_id: Optional[int] = None
 
 
 class TestCreate(TestBase):
@@ -45,6 +47,7 @@ class Test(TestBase):
     id: int
     questions: List[Question] = []
     subject: Optional[SubjectSchema] = None
+    teacher: Optional[TeacherSchema] = None
 
     class Config:
         from_attributes = True

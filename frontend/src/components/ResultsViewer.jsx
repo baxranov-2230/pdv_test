@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
     Box,
@@ -19,73 +19,67 @@ import {
     Button,
     Alert
 } from '@mui/material';
-import { Assessment as AssessmentIcon, PictureAsPdf as PdfIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { PictureAsPdf as PdfIcon } from '@mui/icons-material';
 
 export default function ResultsViewer() {
-    const [results, setResults] = useState([]);
     const [allResults, setAllResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedGroup, setSelectedGroup] = useState('all');
-    const [groups, setGroups] = useState([]);
+    const [selectedSubject, setSelectedSubject] = useState('all');
+    const [selectedTeacher, setSelectedTeacher] = useState('all');
+    const [subjects, setSubjects] = useState([]);
+    const [teachers, setTeachers] = useState([]);
     const [downloading, setDownloading] = useState(false);
 
     useEffect(() => {
-        const fetchResults = async () => {
+        const fetchAll = async () => {
             try {
-                const res = await axios.get('/api/v1/tests/results/all');
-                setAllResults(res.data);
-                setResults(res.data);
-
-                // Guruhlarni ajratish
-                const uniqueGroups = [...new Set(
-                    res.data
-                        .filter(r => r.student_name && r.student_name !== 'Unknown')
-                        .map(r => {
-                            // Agar group_id mavjud bo'lsa, uni ishlatamiz
-                            // Aks holda, talaba nomidan guruhni ajratib olishga harakat qilamiz
-                            return r.group_id || extractGroupFromName(r.student_name);
-                        })
-                        .filter(g => g)
-                )];
-                setGroups(uniqueGroups);
+                const [resultsRes, subjectsRes, teachersRes] = await Promise.all([
+                    axios.get('/api/v1/tests/results/all'),
+                    axios.get('/api/v1/subjects/'),
+                    axios.get('/api/v1/teachers/'),
+                ]);
+                setAllResults(resultsRes.data);
+                setSubjects(subjectsRes.data);
+                setTeachers(teachersRes.data);
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchResults();
+        fetchAll();
     }, []);
 
-    // Talaba nomidan guruhni ajratib olish (masalan: "Ali - PDV-101" formatidan)
     const extractGroupFromName = (name) => {
-        const match = name.match(/([A-Z]+-\d+)/);
+        const match = name?.match(/([A-Z]+-\d+)/);
         return match ? match[1] : null;
     };
 
-    const handleGroupChange = async (event) => {
-        const groupId = event.target.value;
-        setSelectedGroup(groupId);
+    const groups = useMemo(() => {
+        return [...new Set(
+            allResults
+                .filter(r => r.student_name && r.student_name !== 'Unknown')
+                .map(r => r.group_id || extractGroupFromName(r.student_name))
+                .filter(Boolean)
+        )];
+    }, [allResults]);
 
-        if (groupId === 'all') {
-            setResults(allResults);
-        } else {
-            setLoading(true);
-            try {
-                const res = await axios.get(`/api/v1/tests/results/by-group/${groupId}`);
-                setResults(res.data);
-            } catch (err) {
-                console.error(err);
-                // Agar API xato bersa, client-side filterlash
-                const filtered = allResults.filter(r =>
-                    r.group_id === groupId || extractGroupFromName(r.student_name) === groupId
-                );
-                setResults(filtered);
-            } finally {
-                setLoading(false);
+    const results = useMemo(() => {
+        return allResults.filter(r => {
+            if (selectedGroup !== 'all') {
+                const g = r.group_id || extractGroupFromName(r.student_name);
+                if (g !== selectedGroup) return false;
             }
-        }
-    };
+            if (selectedSubject !== 'all' && String(r.subject_id) !== String(selectedSubject)) {
+                return false;
+            }
+            if (selectedTeacher !== 'all' && String(r.teacher_id) !== String(selectedTeacher)) {
+                return false;
+            }
+            return true;
+        });
+    }, [allResults, selectedGroup, selectedSubject, selectedTeacher]);
 
     const handleDownloadPDF = async () => {
         if (selectedGroup === 'all') {
@@ -95,14 +89,18 @@ export default function ResultsViewer() {
 
         setDownloading(true);
         try {
+            const params = {};
+            if (selectedSubject !== 'all') params.subject_id = selectedSubject;
+            if (selectedTeacher !== 'all') params.teacher_id = selectedTeacher;
+
             const response = await axios.get(
                 `/api/v1/tests/results/download-pdf/${selectedGroup}`,
                 {
-                    responseType: 'blob', // Important for PDF download
+                    params,
+                    responseType: 'blob',
                 }
             );
 
-            // Faylni yuklab olish
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -125,6 +123,12 @@ export default function ResultsViewer() {
         return 'error';
     };
 
+    const resetFilters = () => {
+        setSelectedGroup('all');
+        setSelectedSubject('all');
+        setSelectedTeacher('all');
+    };
+
     return (
         <Box>
             <Box sx={{ mb: 3 }}>
@@ -136,28 +140,56 @@ export default function ResultsViewer() {
                 </Typography>
             </Box>
 
-            {/* Guruh tanlash va PDF yuklab olish */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <FormControl sx={{ minWidth: 200 }}>
+                    <FormControl sx={{ minWidth: 180 }}>
                         <InputLabel id="group-select-label">Guruh</InputLabel>
                         <Select
                             labelId="group-select-label"
-                            id="group-select"
                             value={selectedGroup}
                             label="Guruh"
-                            onChange={handleGroupChange}
+                            onChange={(e) => setSelectedGroup(e.target.value)}
                         >
-                            <MenuItem value="all">
-                                <em>Barcha guruhlar</em>
-                            </MenuItem>
+                            <MenuItem value="all"><em>Barcha guruhlar</em></MenuItem>
                             {groups.map((group) => (
-                                <MenuItem key={group} value={group}>
-                                    {group}
-                                </MenuItem>
+                                <MenuItem key={group} value={group}>{group}</MenuItem>
                             ))}
                         </Select>
                     </FormControl>
+
+                    <FormControl sx={{ minWidth: 180 }}>
+                        <InputLabel id="subject-select-label">Fan</InputLabel>
+                        <Select
+                            labelId="subject-select-label"
+                            value={selectedSubject}
+                            label="Fan"
+                            onChange={(e) => setSelectedSubject(e.target.value)}
+                        >
+                            <MenuItem value="all"><em>Barcha fanlar</em></MenuItem>
+                            {subjects.map((s) => (
+                                <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl sx={{ minWidth: 200 }}>
+                        <InputLabel id="teacher-select-label">O'qituvchi</InputLabel>
+                        <Select
+                            labelId="teacher-select-label"
+                            value={selectedTeacher}
+                            label="O'qituvchi"
+                            onChange={(e) => setSelectedTeacher(e.target.value)}
+                        >
+                            <MenuItem value="all"><em>Barcha o'qituvchilar</em></MenuItem>
+                            {teachers.map((t) => (
+                                <MenuItem key={t.id} value={t.id}>{t.full_name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <Button variant="outlined" onClick={resetFilters}>
+                        Tozalash
+                    </Button>
 
                     <Button
                         variant="contained"
@@ -183,6 +215,8 @@ export default function ResultsViewer() {
                         <TableRow>
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student Name</TableCell>
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Test Title</TableCell>
+                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fan</TableCell>
+                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>O'qituvchi</TableCell>
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Score</TableCell>
                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Date Taken</TableCell>
                             <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>Grade</TableCell>
@@ -191,16 +225,14 @@ export default function ResultsViewer() {
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                                     <CircularProgress />
                                 </TableCell>
                             </TableRow>
                         ) : results.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                                    {selectedGroup === 'all'
-                                        ? 'No results available yet.'
-                                        : `${selectedGroup} guruhi uchun natijalar topilmadi.`}
+                                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                    Natijalar topilmadi.
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -213,6 +245,8 @@ export default function ResultsViewer() {
                                         {r.student_name}
                                     </TableCell>
                                     <TableCell>{r.test_title}</TableCell>
+                                    <TableCell>{r.subject_name || '—'}</TableCell>
+                                    <TableCell>{r.teacher_name || '—'}</TableCell>
                                     <TableCell>
                                         <Typography fontWeight="bold" color={r.score >= 50 ? 'green' : 'red'}>
                                             {r.score?.toFixed(1)}%
@@ -236,4 +270,3 @@ export default function ResultsViewer() {
         </Box>
     );
 }
-

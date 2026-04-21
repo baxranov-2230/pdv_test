@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.test import Test, Question, Result
 from app.models.student import Student
+from app.models.teacher import Teacher
 from app.api.deps import get_current_user, get_current_student
 from app.schemas import test as test_schema
 from app.models.user import User
@@ -27,6 +28,7 @@ async def create_test(
             title=test_in.title,
             description=test_in.description,
             subject_id=test_in.subject_id,
+            teacher_id=test_in.teacher_id,
         )
         db.add(test)
         await db.flush()  # Get ID
@@ -52,7 +54,11 @@ async def create_test(
         # Eager load questions for response
         result = await db.execute(
             select(Test)
-            .options(selectinload(Test.questions), selectinload(Test.subject))
+            .options(
+                selectinload(Test.questions),
+                selectinload(Test.subject),
+                selectinload(Test.teacher).selectinload(Teacher.user),
+            )
             .where(Test.id == test.id)
         )
         test_loaded = result.scalars().first()
@@ -85,6 +91,7 @@ async def update_test(
         test.title = test_in.title
         test.description = test_in.description
         test.subject_id = test_in.subject_id
+        test.teacher_id = test_in.teacher_id
 
         # Replace questions - delete existing and add new
         # Note: This changes question IDs. For a simple app this is acceptable.
@@ -120,7 +127,11 @@ async def update_test(
         # Eager load questions for response
         result = await db.execute(
             select(Test)
-            .options(selectinload(Test.questions), selectinload(Test.subject))
+            .options(
+                selectinload(Test.questions),
+                selectinload(Test.subject),
+                selectinload(Test.teacher).selectinload(Teacher.user),
+            )
             .where(Test.id == test.id)
         )
         test_loaded = result.scalars().first()
@@ -167,7 +178,11 @@ async def read_tests(
 ):
     result = await db.execute(
         select(Test)
-        .options(selectinload(Test.questions), selectinload(Test.subject))
+        .options(
+            selectinload(Test.questions),
+            selectinload(Test.subject),
+            selectinload(Test.teacher).selectinload(Teacher.user),
+        )
         .order_by(Test.id.desc())
     )
     tests = result.scalars().all()
@@ -178,7 +193,11 @@ async def read_tests(
 async def get_test(test_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Test)
-        .options(selectinload(Test.questions), selectinload(Test.subject))
+        .options(
+            selectinload(Test.questions),
+            selectinload(Test.subject),
+            selectinload(Test.teacher).selectinload(Teacher.user),
+        )
         .where(Test.id == test_id)
     )
     test = result.scalars().first()
@@ -229,11 +248,25 @@ async def submit_test(
 
 @router.get("/results/all", response_model=List[dict])
 async def get_all_results(
-    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
+    subject_id: Optional[int] = None,
+    teacher_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Result).options(selectinload(Result.student), selectinload(Result.test))
+    query = select(Result).options(
+        selectinload(Result.student),
+        selectinload(Result.test).selectinload(Test.subject),
+        selectinload(Result.test).selectinload(Test.teacher),
     )
+
+    if subject_id is not None or teacher_id is not None:
+        query = query.join(Result.test)
+        if subject_id is not None:
+            query = query.where(Test.subject_id == subject_id)
+        if teacher_id is not None:
+            query = query.where(Test.teacher_id == teacher_id)
+
+    result = await db.execute(query)
     results = result.scalars().all()
 
     return [
@@ -242,7 +275,12 @@ async def get_all_results(
             "student_id": r.student.id if r.student else None,
             "student_name": r.student.full_name if r.student else "Unknown",
             "group_id": r.student.group_id if r.student else None,
+            "test_id": r.test.id if r.test else None,
             "test_title": r.test.title if r.test else "Unknown",
+            "subject_id": r.test.subject_id if r.test else None,
+            "subject_name": r.test.subject.name if r.test and r.test.subject else None,
+            "teacher_id": r.test.teacher_id if r.test else None,
+            "teacher_name": r.test.teacher.full_name if r.test and r.test.teacher else None,
             "score": r.score,
             "taken_at": r.taken_at,
         }
@@ -252,20 +290,39 @@ async def get_all_results(
 
 @router.get("/results/my", response_model=List[dict])
 async def get_my_results(
+    subject_id: Optional[int] = None,
+    teacher_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     current_student: Student = Depends(get_current_student),
 ):
-    result = await db.execute(
+    query = (
         select(Result)
-        .options(selectinload(Result.test))
+        .options(
+            selectinload(Result.test).selectinload(Test.subject),
+            selectinload(Result.test).selectinload(Test.teacher),
+        )
         .where(Result.student_id == current_student.id)
     )
+
+    if subject_id is not None or teacher_id is not None:
+        query = query.join(Result.test)
+        if subject_id is not None:
+            query = query.where(Test.subject_id == subject_id)
+        if teacher_id is not None:
+            query = query.where(Test.teacher_id == teacher_id)
+
+    result = await db.execute(query)
     results = result.scalars().all()
 
     return [
         {
             "id": r.id,
+            "test_id": r.test.id if r.test else None,
             "test_title": r.test.title if r.test else "Unknown",
+            "subject_id": r.test.subject_id if r.test else None,
+            "subject_name": r.test.subject.name if r.test and r.test.subject else None,
+            "teacher_id": r.test.teacher_id if r.test else None,
+            "teacher_name": r.test.teacher.full_name if r.test and r.test.teacher else None,
             "score": r.score,
             "taken_at": r.taken_at,
         }
@@ -276,6 +333,8 @@ async def get_my_results(
 @router.get("/results/by-group/{group_id}", response_model=List[dict])
 async def get_results_by_group(
     group_id: str,
+    subject_id: Optional[int] = None,
+    teacher_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -293,13 +352,25 @@ async def get_results_by_group(
 
     student_ids = [s.id for s in students]
 
-    # Shu talabalarning barcha natijalarini olish
-    results_query = await db.execute(
+    query = (
         select(Result)
-        .options(selectinload(Result.student), selectinload(Result.test))
+        .options(
+            selectinload(Result.student),
+            selectinload(Result.test).selectinload(Test.subject),
+            selectinload(Result.test).selectinload(Test.teacher),
+        )
         .where(Result.student_id.in_(student_ids))
         .order_by(Result.taken_at.desc())
     )
+
+    if subject_id is not None or teacher_id is not None:
+        query = query.join(Result.test)
+        if subject_id is not None:
+            query = query.where(Test.subject_id == subject_id)
+        if teacher_id is not None:
+            query = query.where(Test.teacher_id == teacher_id)
+
+    results_query = await db.execute(query)
     results = results_query.scalars().all()
 
     return [
@@ -310,6 +381,10 @@ async def get_results_by_group(
             "group_id": r.student.group_id if r.student else None,
             "test_id": r.test.id if r.test else None,
             "test_title": r.test.title if r.test else "Unknown",
+            "subject_id": r.test.subject_id if r.test else None,
+            "subject_name": r.test.subject.name if r.test and r.test.subject else None,
+            "teacher_id": r.test.teacher_id if r.test else None,
+            "teacher_name": r.test.teacher.full_name if r.test and r.test.teacher else None,
             "score": r.score,
             "taken_at": r.taken_at,
         }
@@ -320,6 +395,8 @@ async def get_results_by_group(
 @router.get("/results/download-pdf/{group_id}")
 async def download_group_results_pdf(
     group_id: str,
+    subject_id: Optional[int] = None,
+    teacher_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -338,19 +415,33 @@ async def download_group_results_pdf(
     else:
         student_ids = [s.id for s in students]
 
-        # Shu talabalarning barcha natijalarini olish
-        results_query = await db.execute(
+        query = (
             select(Result)
-            .options(selectinload(Result.student), selectinload(Result.test))
+            .options(
+                selectinload(Result.student),
+                selectinload(Result.test).selectinload(Test.subject),
+                selectinload(Result.test).selectinload(Test.teacher),
+            )
             .where(Result.student_id.in_(student_ids))
             .order_by(Result.taken_at.desc())
         )
+
+        if subject_id is not None or teacher_id is not None:
+            query = query.join(Result.test)
+            if subject_id is not None:
+                query = query.where(Test.subject_id == subject_id)
+            if teacher_id is not None:
+                query = query.where(Test.teacher_id == teacher_id)
+
+        results_query = await db.execute(query)
         results = results_query.scalars().all()
 
         results_data = [
             {
                 "student_name": r.student.full_name if r.student else "Unknown",
                 "test_title": r.test.title if r.test else "Unknown",
+                "subject_name": r.test.subject.name if r.test and r.test.subject else None,
+                "teacher_name": r.test.teacher.full_name if r.test and r.test.teacher else None,
                 "score": r.score,
                 "taken_at": r.taken_at,
             }
