@@ -33,6 +33,8 @@ class FaceService:
                 )
 
             return encodings[0].tolist()  # Convert numpy array to list for JSON storage
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Error processing image: {str(e)}"

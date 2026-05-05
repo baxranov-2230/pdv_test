@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -204,6 +204,50 @@ async def verify_student_match(
         )
 
     return {"success": True, "message": "Face verified successfully"}
+
+
+@router.put("/{id}", response_model=None)
+async def update_student(
+    id: int,
+    full_name: str = Form(...),
+    student_id: str = Form(...),
+    group_id: str = Form(...),
+    file: Optional[UploadFile] = File(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    result = await db.execute(select(Student).where(Student.id == id))
+    student = result.scalars().first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Check student_id uniqueness only if it changed
+    if student_id != student.student_id:
+        existing = await db.execute(select(Student).where(Student.student_id == student_id))
+        if existing.scalars().first():
+            raise HTTPException(status_code=400, detail="Student ID already exists")
+
+    student.full_name = full_name
+    student.student_id = student_id
+    student.group_id = group_id
+
+    # Update face encoding only if a new file is provided
+    if file and file.filename:
+        try:
+            encoding = await FaceService.get_face_encoding(file)
+            student.face_encoding = encoding
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    await db.commit()
+    await db.refresh(student)
+    return {
+        "id": student.id,
+        "full_name": student.full_name,
+        "message": "Student updated successfully",
+    }
 
 
 @router.delete("/{id}")
